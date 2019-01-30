@@ -2,6 +2,7 @@ import numpy as np
 import numpy.random as rd
 from quadprog import solve_qp
 from decoupling import decomposable_decoupling
+import pdb
 
 
 def main():
@@ -16,13 +17,17 @@ def main():
     M = rd.rand(n, n)
     M = np.dot(M, M.transpose())
     M_obj = quadratic(M)
-    # A = M[0:39, 0:39]
-    A = quadratic(M[0:nA, 0:nA])
-    # C = M[40:99, 40:99]
-    C = quadratic(M[nA:n, nA:n])
-    # B = M[0:39, 40:99]
-    M[0:nA, 0:nA] = 0
-    M[nA:n, nA:n] = 0
+    A = M.copy()
+    A[nA:n, :] = 0
+    A[:, nA:n] = 0
+    A = quadratic(A)
+    C = M.copy()
+    C[0:nA, :] = 0
+    C[:, 0:nA] = 0
+    C = quadratic(C)
+    B = M.copy()
+    B[0:nA, 0:nA] = 0
+    B[nA:n, nA:n] = 0
     B = quadratic(M)
 
     # elicitation parameter
@@ -31,8 +36,10 @@ def main():
     r = 1
     # number of iterations
     niter = 100
+    # initial value
+    x0 = np.ones(n)
 
-    x_opt = decomposable_decoupling([A, C, B], niter, e, r, n)
+    x_opt, fun_vals = decomposable_decoupling([A, C, B], niter, e, r, n, x0=x0)
     print(f"approx sol. = {x_opt}")
     f_opt = M_obj(x_opt)
     print(f"obj fun value at approx solution = {f_opt}")
@@ -40,7 +47,9 @@ def main():
 
 class quadratic():
 
-    """ Quadratic function. """
+    """ Matrix representing the quadratic function
+    x \mapsto 1/2 * <x,Ax>
+    """
 
     def __init__(self, A):
         """TODO: to be defined1. """
@@ -52,14 +61,15 @@ class quadratic():
 
     def __call__(self, x):
         """Funciton evaluation."""
-        return np.inner(self.A.dot(x), x)
+        return 0.5*np.inner(self.A.dot(x), x)
 
     def prox(self, x, r):
         """Proximal operator.
         Return solution to
         argmin_u <u,Au> + r/2 || u - x||^2
         """
-        return solve_qp(self.A + r/2*np.eye(self.dim, self.dim), x)
+        solution = solve_qp(self.A + r*np.eye(self.dim, self.dim), r*x)
+        return solution[0]
 
 
 if __name__ == "__main__":
