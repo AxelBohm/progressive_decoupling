@@ -1,7 +1,11 @@
 import numpy as np
 import numpy.random as rd
+import matplotlib.pyplot as plt
+
 from quadprog import solve_qp
 from decoupling import decomposable_decoupling
+from util import CallBack
+
 import pdb
 
 
@@ -16,39 +20,52 @@ def main():
     # nC = 60
     M = rd.rand(n, n)
     M = np.dot(M, M.transpose())
-    M_obj = quadratic(M)
+    M_obj = Quadratic(M)
     A = M.copy()
     A[nA:n, :] = 0
     A[:, nA:n] = 0
-    A = quadratic(A)
+    A = Quadratic(A)
     C = M.copy()
     C[0:nA, :] = 0
     C[:, 0:nA] = 0
-    C = quadratic(C)
+    C = Quadratic(C)
     B = M.copy()
     B[0:nA, 0:nA] = 0
     B[nA:n, nA:n] = 0
-    B = quadratic(M)
+    B = Quadratic(M)
 
-    # elicitation parameter
-    e = 5
-    # proximal parameter
-    r = 1
-    # number of iterations
-    niter = 100
-    # initial value
+    # global minimizer
+    x_opt = np.zeros(n)
+
+    # params
+    e = 1
+    r = 2
+    niter = 10
     x0 = np.ones(n)
 
-    x_opt, fun_vals = decomposable_decoupling([A, C, B], niter, e, r, n, x0=x0)
-    print(f"approx sol. = {x_opt}")
-    f_opt = M_obj(x_opt)
-    print(f"obj fun value at approx solution = {f_opt}")
+    dist_to_solution = lambda x: np.linalg.norm(x - x_opt)
+    callback = CallBack(M_obj, dist_to_solution)
+
+    x_opt = decomposable_decoupling([A, C, B], niter, e, r, n, x0=x0,
+                                    callback=callback)
+
+    # make plots
+    plt.plot(np.arange(niter), callback.stored_obj_fun_values)
+    plt.xlabel('iterations')
+    plt.ylabel('function value')
+    plt.title(f'Decoupling, r={r}, e={e}')
+    plt.show()
+
+    plt.plot(np.arange(niter), callback.stored_dist_to_solution)
+    plt.xlabel('iterations')
+    plt.ylabel('distance to solution')
+    plt.title(f'Decoupling, r={r}, e={e}')
+    plt.show()
 
 
-class quadratic():
-
-    """ Matrix representing the quadratic function
-    x \mapsto 1/2 * <x,Ax>
+class Quadratic():
+    """Matrix representing the quadratic function
+    x mapsto 1/2 * <x,Ax>
     """
 
     def __init__(self, A):

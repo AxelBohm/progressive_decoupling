@@ -12,8 +12,12 @@ def decomposable_decoupling(phi, niter, e, r, n, **kwargs):
     :returns: approx. solution
 
     """
-    if r <= 0:
-        NameError('stepsize parameter should be positive.')
+    if e < 0:
+        raise ValueError('Elicitation parameter should be nonnegative.')
+
+    if r <= e:
+        raise ValueError('Stepsize must be strictly larger than elicitation'
+                         'parameter')
 
     x0 = kwargs.pop('x0', None)
     if x0 is None:
@@ -25,18 +29,23 @@ def decomposable_decoupling(phi, niter, e, r, n, **kwargs):
     if y0 is None:
         y0 = np.zeros((numof_summands, n))
 
+    callback = kwargs.pop('callback', None)
+    if callback is None:
+        def callback(x): return 0
+
     x = x0.copy()
     x_hat = np.tile(x0.copy(), (numof_summands, 1))
     y = y0.copy()
-    store_fun_val = [0]*niter
 
     for k in range(niter):
         for j in range(numof_summands):
+            if r == 3:
+                pdb.set_trace()
             x_hat[j] = phi[j].prox((x + 1/r*y[j]), r)
             # projection onto linkage subspace
             x = np.average(x_hat, axis=0)
             y[j] = y[j] - (r - e)*(x_hat[j] - x)
 
-        store_fun_val[k] = sum([phi_i(x) for phi_i in phi])
+        callback(x)
 
-    return x, store_fun_val
+    return x
