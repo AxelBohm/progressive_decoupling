@@ -39,9 +39,7 @@ def decomposable_decoupling(phi, niter, e, r, n, **kwargs):
 
     for k in range(niter):
         for j in range(numof_summands):
-            if r == 3:
-                pdb.set_trace()
-            x_hat[j] = phi[j].prox((x + 1/r*y[j]), r)
+            x_hat[j] = phi[j].prox(x + 1/r*y[j], r)
             # projection onto linkage subspace
             x = np.average(x_hat, axis=0)
             y[j] = y[j] - (r - e)*(x_hat[j] - x)

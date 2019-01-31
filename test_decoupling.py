@@ -93,3 +93,14 @@ def test_class_matrix():
 
 def test_rosenbrock():
     example_rosenbrock.main()
+
+
+def test_class_rosenbrock():
+    R = example_rosenbrock.Rosenbrock(1, 100)
+    npt.assert_almost_equal(R(np.ones(2)), 0)
+
+    R = example_rosenbrock.Rosenbrock(2, 10)
+    npt.assert_almost_equal(R(np.array([2, 4])), 0)
+
+    R1 = example_rosenbrock.RosenbrockFirstSummand(1, 100)
+    npt.assert_almost_equal(R1(np.ones(2)), 0)

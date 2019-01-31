@@ -1,6 +1,8 @@
 import numpy as np
 import numpy.random as rd
+import numpy.linalg as la
 import matplotlib.pyplot as plt
+from scipy.linalg import eigh
 
 from quadprog import solve_qp
 from decoupling import decomposable_decoupling
@@ -19,8 +21,23 @@ def main():
     nA = 4
     # nC = 60
     M = rd.rand(n, n)
-    M = np.dot(M, M.transpose())
-    M_obj = Quadratic(M)
+    M = np.dot(M, M.T)
+    M_obj = Quadratic(M + np.eye(n))
+
+    # largest_eigenval, _ = eigh(M, eigvals=(n-1, n-1))
+    smallest_eigenval, _ = eigh(M, eigvals=(0, 0))
+
+    alpha = smallest_eigenval
+    P_perp = np.eye(n) - np.ones((n, n))*1/n
+    gamma = la.norm(la.multi_dot([P_perp, M, P_perp]), 2)
+    beta = 0.5*la.norm(la.multi_dot([P_perp, M+M.T, P_perp]), 2)
+
+    pdb.set_trace()
+    e_0 = beta**2/alpha + gamma
+    e = e_0 + 1
+
+    pdb.set_trace()
+
     A = M.copy()
     A[nA:n, :] = 0
     A[:, nA:n] = 0
@@ -43,7 +60,7 @@ def main():
     niter = 10
     x0 = np.ones(n)
 
-    dist_to_solution = lambda x: np.linalg.norm(x - x_opt)
+    def dist_to_solution(x): return la.norm(x - x_opt)
     callback = CallBack(M_obj, dist_to_solution)
 
     x_opt = decomposable_decoupling([A, C, B], niter, e, r, n, x0=x0,
@@ -69,11 +86,10 @@ class Quadratic():
     """
 
     def __init__(self, A):
-        """TODO: to be defined1. """
         self.A = A
         (n, m) = A.shape
         if n != m:
-            raise NameError("matrix should be square.")
+            raise ValueError("matrix should be square.")
         self.dim = n
 
     def __call__(self, x):
