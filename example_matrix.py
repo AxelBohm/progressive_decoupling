@@ -19,24 +19,17 @@ def main():
     """
     n = 100
     nA = 4
-    # nC = 60
     M = rd.rand(n, n)
     M = np.dot(M, M.T)
     M_obj = Quadratic(M + np.eye(n))
 
-    # largest_eigenval, _ = eigh(M, eigvals=(n-1, n-1))
-    smallest_eigenval, _ = eigh(M, eigvals=(0, 0))
-
-    alpha = smallest_eigenval
-    P_perp = np.eye(n) - np.ones((n, n))*1/n
+    alpha = M_obj.smallest_eigenvalue()
+    P = np.ones((n, n))*1/n
+    P_perp = np.eye(n) - P
     gamma = la.norm(la.multi_dot([P_perp, M, P_perp]), 2)
-    beta = 0.5*la.norm(la.multi_dot([P_perp, M+M.T, P_perp]), 2)
+    beta = 0.5*la.norm(la.multi_dot([P, M+M.T, P_perp]), 2)
 
-    pdb.set_trace()
     e_0 = beta**2/alpha + gamma
-    e = e_0 + 1
-
-    pdb.set_trace()
 
     A = M.copy()
     A[nA:n, :] = 0
@@ -55,9 +48,10 @@ def main():
     x_opt = np.zeros(n)
 
     # params
-    e = 1
-    r = 2
-    niter = 10
+    e = np.round(e_0)
+    r = e + 100
+    # r = np.sqrt((e/2)**2+1) + e/2
+    niter = 100
     x0 = np.ones(n)
 
     def dist_to_solution(x): return la.norm(x - x_opt)
@@ -95,6 +89,14 @@ class Quadratic():
     def __call__(self, x):
         """Funciton evaluation."""
         return 0.5*np.inner(self.A.dot(x), x)
+
+    def smallest_eigenvalue(self):
+        smallest_eigenvalue, _ = eigh(self.A, eigvals=(0, 0))
+        return smallest_eigenvalue
+
+    def largest_eigenvalue(self):
+        largest_eigenvalue, _ = eigh(self.A, eigvals=(n-1, n-1))
+        return largest_eigenvalue
 
     def prox(self, x, r):
         """Proximal operator.
