@@ -7,8 +7,6 @@ from scipy.linalg import eigh
 from decoupling import decomposable_decoupling
 from util import CallBack
 
-import pdb
-
 
 def main():
 
@@ -36,7 +34,7 @@ def main():
                        P_perp]), 2)
     e_0 = beta**2/alpha + gamma
 
-    e = e_0
+    e = np.round(e_0)
     r = e+100
 
     def dist_to_solution(x): return np.linalg.norm(x - x_opt)
@@ -45,7 +43,6 @@ def main():
     x_opt = decomposable_decoupling([first_summand, second_summand], niter,
                                     e, r, n, x0=x0, callback=callback)
 
-    pdb.set_trace()
     # x_opt = decomposable_decoupling([obj_fun], niter,
     #                                 e, r, n, x0=x0, callback=callback)
 
