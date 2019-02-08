@@ -1,8 +1,10 @@
 import numpy as np
 import numpy.random as rd
 import decoupling as dc
-import example_matrix
+import example_matrix_indefinite as emi
+import example_matrix_convex as emc
 import example_rosenbrock
+import util
 import numpy.testing as npt
 import pdb
 
@@ -20,7 +22,7 @@ def test_decomposable_decoupling():
 def test_prox():
     a11 = 1.
     a22 = 1.
-    A = example_matrix.Quadratic(np.array([[a11, 0.], [0., a22]]))
+    A = util.Quadratic(np.array([[a11, 0.], [0., a22]]))
     assert all(A.prox(np.zeros(2), 1.) == np.zeros(2))
     w = np.array([2., 3.])
     rr = 1.
@@ -34,7 +36,7 @@ def test_prox():
 def test_prox2():
     a11 = 2.
     a22 = 3.
-    A = example_matrix.Quadratic(np.array([[a11, 0.], [0., a22]]))
+    A = util.Quadratic(np.array([[a11, 0.], [0., a22]]))
     assert all(A.prox(np.zeros(2), 1.) == np.zeros(2))
     w = np.array([2., 3.])
     r = 1.
@@ -51,19 +53,19 @@ def test_matrix_split():
     # nC = 60
     M = rd.rand(n, n)
     M = np.dot(M, M.transpose())
-    M_obj = example_matrix.Quadratic(M)
+    M_obj = util.Quadratic(M)
     A = M.copy()
     A[nA:n, :] = 0
     A[:, nA:n] = 0
-    A = example_matrix.Quadratic(A)
+    A = util.Quadratic(A)
     C = M.copy()
     C[0:nA, :] = 0
     C[:, 0:nA] = 0
-    C = example_matrix.Quadratic(C)
+    C = util.Quadratic(C)
     B = M.copy()
     B[0:nA, 0:nA] = 0
     B[nA:n, nA:n] = 0
-    B = example_matrix.Quadratic(M)
+    B = util.Quadratic(M)
 
     # global minimizer
     x_opt = np.zeros(n)
@@ -82,12 +84,16 @@ def test_matrix_split():
     assert M_obj(x_opt) <= 1
 
 
-def test_example_matrix():
-    example_matrix.main()
+def test_example_matrix_indefinite():
+    emi.main()
+
+
+def test_example_matrix_convex():
+    emc.main()
 
 
 def test_class_matrix():
-    A = example_matrix.Quadratic(np.array([[3, 2], [2, 1]]))
+    A = util.Quadratic(np.array([[3, 2], [2, 1]]))
     x, fun_vals = dc.decomposable_decoupling([A], 10, 0, 1, 2, x0=np.ones(2))
 
 
