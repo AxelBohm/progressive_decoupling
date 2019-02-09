@@ -9,6 +9,19 @@ import numpy.testing as npt
 import pdb
 
 
+def test_projection():
+    P = util.projection_onto_linkage_space(2, 3)
+    P_correct = 1/3*np.array([[1, 0, 1, 0, 1, 0],
+                              [0, 1, 0, 1, 0, 1],
+                              [1, 0, 1, 0, 1, 0],
+                              [0, 1, 0, 1, 0, 1],
+                              [1, 0, 1, 0, 1, 0],
+                              [0, 1, 0, 1, 0, 1],
+                              [1, 0, 1, 0, 1, 0]])
+
+    npt.assert_almost_equal(P.matrix, P_correct)
+
+
 def test_decomposable_decoupling():
     """
     The splitting case. This means that the linkage is given by the subspace
