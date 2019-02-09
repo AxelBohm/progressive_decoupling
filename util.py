@@ -1,7 +1,11 @@
 import numpy as np
 import numpy.random as rd
+import numpy.linalg as la
+from numpy.linalg import multi_dot
 from scipy.linalg import eigh
 from quadprog import solve_qp
+
+import pdb
 
 
 class CallBack():
@@ -44,6 +48,12 @@ class Quadratic():
     def __add__(self, other):
         return Quadratic(self.matrix + other.matrix)
 
+    def __sub__(self, other):
+        return Quadratic(self.matrix - other.matrix)
+
+    def __matmul__(self, other):
+        return self.matrix @ other.matrix
+
     def smallest_eigenvalue(self):
         smallest_eigenvalue, _ = eigh(self.matrix, eigvals=(0, 0))
         return smallest_eigenvalue
@@ -66,12 +76,44 @@ def projection_onto_linkage_space(dim, size_product):
     """generate matrix representing the projection onto the linkage space.
     """
     block = np.eye(dim)*1/size_product
-    block = np.repeat(block, size_product, axis=0)
-    return np.repeat(block, size_product, axis=1)
+    return Quadratic(np.tile(block, (size_product, size_product)))
 
 
 def random_psd(n):
     """generates a random  matrix
     """
     C = rd.rand(n, n)
-    return C.T @ C
+    return Quadratic(C.T @ C)
+
+
+def compute_minimal_elicitation(M_unsplit, M_split, P):
+    P_perp = Quadratic(np.eye(P.dim)) - P
+
+    alpha = M_unsplit.smallest_eigenvalue()
+
+    tmp = multi_dot([P_perp.matrix, M_split.matrix, P_perp.matrix])
+    symmetric_part = 0.5*(tmp + tmp.T)
+    gamma, _ = eigh(symmetric_part, eigvals=(0, 0))
+
+    tmp = multi_dot([P.matrix, M_split.matrix, P_perp.matrix])
+    symmetric_part = 0.5*(tmp + tmp.T)
+    beta, _ = eigh(symmetric_part, eigvals=(0, 0))
+    beta = 0.5*beta
+
+    trace_condition = -gamma - alpha
+    det_condition = beta**2/alpha - gamma
+
+    e_0 = max(trace_condition, det_condition)
+    return e_0
+
+
+def compute_minimal_elicitation_old(M_unsplit, M_split, P):
+    P_perp = Quadratic(np.eye(P.dim)) - P
+
+    alpha = M_unsplit.smallest_eigenvalue()
+    gamma = la.norm(la.multi_dot([P_perp.matrix, M_split.matrix,
+                    P_perp.matrix]), 2)
+    beta = 0.5*la.norm(la.multi_dot([P.matrix, M_split.matrix+M_split.matrix.T,
+                       P_perp.matrix]), 2)
+
+    return beta**2/alpha - gamma
